@@ -1,0 +1,1 @@
+(A -o B) * (B -o A) |- (C * A -o C * B) * (C * B -o C * A)

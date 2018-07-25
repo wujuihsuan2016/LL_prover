@@ -1,0 +1,1 @@
+((A -o B) -o bot) -o bot, ((B -o C) -o bot) -o bot |- ((A -o C) -o bot) -o bot

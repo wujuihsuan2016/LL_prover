@@ -1,0 +1,2 @@
+|- ((((A -o B) -o bot) -o bot) -o (A *(B -o bot ) -o bot)) * ((A * (B -o bot) -o
+bot) -o (((A -o B) -o bot) -o bot))
