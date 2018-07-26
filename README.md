@@ -8,10 +8,12 @@ A Linear Logic Prover implemented in OCaml
   
 ### Compilation
 
+To compile the LL prover,
 ```
 make prover
 ```
 
+To 
 ### Running tests
 To view the list of available options,
 ```
@@ -34,7 +36,7 @@ $ File "filename": Provable. Execution time: 0.004000ms
 - `-res_to_file` : Write the result in the file filename.res instead of writing to the standard output.
 - `-bound [number]` : Set a bound for the prover. For the backward proof search, this bound is a (pseudo-)upper bound on the number of applications of the contraction rule. For the inverse method, this is a upper bound on the number of copies of a sequent that we can use in a derived rule. Check the [thesis](http://reports-archive.adm.cs.cmu.edu/anon/2006/CMU-CS-06-162.pdf) of K. Chaudhuri for further details.
 
-#### Syntax 
+### Syntax 
 A sequent is of the form ` [antecedents] |- [consequents] `, where `[antecedents]` and `[consequents]` are two comma-separated lists of formulas.
 
 For the formulas,
@@ -52,11 +54,11 @@ For the formulas,
 - 1 : `1`
 - 0 : `0`
 
-All unary connectives are right-associative. The binary connective `-o` is right-associative while the others are left-associative. All unary connectives have higher precedence than all binary connectives. The linear implication `-o` has the lowest precedence. No other order of precedence is assumed for the moment.
+All unary connectives are right-associative. The binary connective `-o` is right-associative while the others are left-associative. All unary connectives have higher precedence than all binary connectives. The linear implication `-o` has the lowest precedence. No other order of precedence is assumed for the moment but some modifications are likely to be done soon.
 
 A valid test file contains exactly a sequent and comments delimited by `(*` and `*)`.
 
-For example, `!(!X -o Y), !(!Y -O Z) |- !X -o Z (* Provable *)` is a valid test file.
+For example, `!(!X -o Y), !(!Y -o Z) |- !X -o Z (* Provable *)` is a valid test file.
 
-#### Available tests 
+### Available tests 
 There are several tests in the folder src/Benchmarking\_tests. Most of them are collected from [here](https://github.com/carlosolarte/Benchmarking-Linear-Logic).
