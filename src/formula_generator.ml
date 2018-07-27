@@ -4,15 +4,12 @@ open Formula
 open Printer
 open Fctns
 
-let nb_var = ref 3 
+let in_ill = ref false
+let size = ref 10
+let nb = ref 0
+let nb_atoms = ref 3 (* A "bound" on the number of atoms *)
 
-let prob = ref 1.
-
-let nb_size1 = ref 0
-
-let nb_binop = ref 0
-
-let nb_unop = ref 0
+let prob = ref 0.9 (* The probability of having a top-level unary operator *)
 
 let pos_neg i in_ill = 
   let str = "X_" ^ string_of_int i in
@@ -59,9 +56,7 @@ let random_formula in_ill size size1_tbl binop_tbl unop_tbl =
             apply_bin binop (aux_random (i + 1)) (aux_random (size - 2 - i)) in
       aux_random size
 
-let main () = 
-  let in_ill = Array.length Sys.argv >= 4 in
-  let size = int_of_string Sys.argv.(1) in
+let create_formula in_ill size nb nb_atoms = 
   let binop_tbl = 
     if in_ill then [|TENS; PLUS; WITH; IMPL|]
     else [|TENS; PLUS; WITH; PAR; IMPL|] in
@@ -72,20 +67,35 @@ let main () =
       [One; Zero; Top] @ (if in_ill then [] else [Bottom]) @ 
       List.fold_left 
         (fun res i -> pos_neg i in_ill @ res) 
-        [] (List.init !nb_var (fun i -> i)) in
+        [] (List.init nb_atoms (fun i -> i)) in
     Array.of_list size1_list in
   let create i = 
     Random.self_init (); 
     let formula = random_formula in_ill size size1_tbl binop_tbl unop_tbl in
-    let filename = "random_formulas/" ^ (if in_ill then "ill/" else "ll/") ^
+    let filename = "test_formulas/" ^ (if in_ill then "ill/" else "ll/") ^
     "size_" ^ string_of_int size ^ "/" ^ string_of_int i in
     let oc = open_out filename in
     let ff = Format.formatter_of_out_channel oc in
     print_sequent_2 ff ([], [formula]);
     close_out oc
   in
-  for i = 1 to int_of_string Sys.argv.(2) do  
+  for i = 1 to nb do  
     create i;
   done
+
+let options = 
+  ["-ill", Arg.Set in_ill, "Generate formulas of ILL (LL by default)";
+   "-size", Arg.Set_int size, 
+   "Set the size of formulas (the default value is 10)";
+   "-nb", Arg.Set_int nb, 
+   "Set the number of formulas to generate (the default value is 0)"; 
+   "-nb_atoms", Arg.Set_int nb_atoms, 
+   "Set an upper bound on the number of different atoms (the default value is 3)"]
+
+let usage_msg = "Usage: random_generator.byte [option]" 
+
+let main () = 
+  Arg.parse options (fun _ -> ()) usage_msg; 
+  create_formula !in_ill !size !nb !nb_atoms
 
 let () = main ()
