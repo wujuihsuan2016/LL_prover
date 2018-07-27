@@ -10,8 +10,8 @@ gen_lcm:
 counterexample:
 	ocamlbuild -use-menhir -use-ocamlfind ll_ill.byte
 
-random:
-	ocamlbuild -lib unix -use-menhir -use-ocamlfind random_generator.byte
+formulas:
+	ocamlbuild -lib unix -use-menhir -use-ocamlfind formula_generator.byte
 
 prover: 
 	ocamlbuild -lib unix -use-menhir -use-ocamlfind prover.byte

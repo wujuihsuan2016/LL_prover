@@ -1,94 +1,91 @@
+(* A (pseudo-)random generator of formulas *)
+
 open Formula
 open Printer
-open Format
+open Fctns
 
-(* Generator of provable sequents using purely positive affine formula
-   (rejecting !, -o and &), introduced by O. Laurent in "Around Classical and
-   Intuitionistic Linear Logics" *)
+let nb_var = ref 3 
 
-let x = Par (Pos "X", Neg "X")
+let prob = ref 1.
 
-let l = [One; Zero; Top; x] 
+let nb_size1 = ref 0
 
-let rec create_pairs l acc = match l with
-  | [] -> acc
-  | hd :: tl -> 
-      let acc' = 
-        List.fold_left 
-          (fun l x -> 
-            [(x, hd, true); (x, hd, false); (hd, x, true); (hd, x, false)] @ l)
-          acc l
-      in create_pairs tl acc' 
+let nb_binop = ref 0
 
-let q = Queue.create ()
+let nb_unop = ref 0
 
-let () = List.iter (fun x -> Queue.add x q) (create_pairs l [])
+let pos_neg i in_ill = 
+  let str = "X_" ^ string_of_int i in
+  if in_ill then [Pos str] else [Pos str; Neg str]
 
-let purely_positive_affine = ref [One; Zero; Top; x] 
+type binop =
+  | TENS
+  | PLUS
+  | WITH
+  | IMPL
+  | PAR
 
-let card = ref 4
+type unop = 
+  | OC
+  | WN
 
-let create_sequents n = 
-  while !card < n do begin
-    incr card;
-    let (f1, f2, bl) = Queue.take q in
-    match bl with
-      | true -> 
-          let new_f = Tensor (f1, f2) in
-          purely_positive_affine := new_f :: !purely_positive_affine; 
-          List.iter 
-            (fun x -> 
-              Queue.add (x, new_f, true) q;
-              Queue.add (x, new_f, false) q;
-              Queue.add (new_f, x, true) q;
-              Queue.add (new_f, x, false) q) (List.rev !purely_positive_affine)
-      | false ->
-          let new_f = Plus (f1, f2) in
-          purely_positive_affine := new_f :: !purely_positive_affine;
-          List.iter 
-            (fun x ->
-              Queue.add (x, new_f, true) q;
-              Queue.add (x, new_f, false) q;
-              Queue.add (new_f, x, true) q;
-              Queue.add (new_f, x, false) q) (List.rev !purely_positive_affine) 
-     end
-  done
+let apply_bin binop f g = match binop with
+  | TENS -> Tensor (f, g)
+  | PLUS -> Plus (f, g)
+  | WITH -> With (f, g)
+  | IMPL -> Impl (f, g)
+  | PAR -> Par (f, g)
 
-let r = Pos "Y" 
+let apply_un unop f = match unop with
+  | OC -> OfCourse f
+  | WN -> Whynot f 
 
-(* The translation of a formula of LL is a formula of ILL *)
-
-let rec translation = function
-  | Pos x -> Impl (Pos x, r)
-  | Neg x -> Pos x
-  | One -> Impl (One, r) 
-  | Zero -> Impl (Zero, r)
-  | Bottom -> One
-  | Top -> Zero
-  | Tensor (f, g) -> 
-      Impl (Tensor (Impl (translation f, r), Impl (translation g, r)), r)
-  | Plus (f, g) ->
-      Impl (Plus (Impl (translation f, r), Impl (translation g, r)), r)
-  | Par (f, g) -> Tensor (translation f, translation g)
-  | With (f, g) -> Plus (translation f, translation g)
-  | OfCourse f -> Impl (OfCourse (Impl (translation f, r)), r)
-  | Whynot f -> OfCourse (Impl (Impl (translation f, r), r))
-
-
+let random_formula in_ill size size1_tbl binop_tbl unop_tbl =
+  let nb_size1 = Array.length size1_tbl in
+  let nb_binop = Array.length binop_tbl in
+  let nb_unop = Array.length unop_tbl in
+  let rec aux_random size = match size with
+    | 1 -> let n = Random.int nb_size1 in size1_tbl.(n)
+    | 2 -> let unop = unop_tbl.(Random.int nb_unop) in
+         apply_un unop (aux_random 1)
+    | _ -> 
+      let top_level_unop = Random.float 1.0 in match top_level_unop with
+        | _ when top_level_unop > !prob -> 
+            let unop = unop_tbl.(Random.int nb_unop) in
+            apply_un unop (aux_random (size - 1)) 
+        | _ ->
+            let binop = binop_tbl.(Random.int nb_binop) in
+            let i = Random.int (size - 2) in
+            apply_bin binop (aux_random (i + 1)) (aux_random (size - 2 - i)) in
+      aux_random size
 
 let main () = 
-  create_sequents (int_of_string Sys.argv.(1));
-  let i = ref 1 in 
-  let print_seq f =
-    let file = "sequents/" ^ (string_of_int !i) in 
-    let oc = open_out file in
-    let fmt = formatter_of_out_channel oc in
-    let sequent = ([f], [Impl (translation f, r)]) in
-    print_sequent_2 fmt sequent;
-    flush oc;
-    incr i;
-    close_out oc 
-  in 
-  List.iter print_seq (List.rev !purely_positive_affine)
+  let in_ill = Array.length Sys.argv >= 4 in
+  let size = int_of_string Sys.argv.(1) in
+  let binop_tbl = 
+    if in_ill then [|TENS; PLUS; WITH; IMPL|]
+    else [|TENS; PLUS; WITH; PAR; IMPL|] in
+  let unop_tbl = 
+    if in_ill then [|OC|] else [|OC; WN|] in
+  let size1_tbl = 
+    let size1_list = 
+      [One; Zero; Top] @ (if in_ill then [] else [Bottom]) @ 
+      List.fold_left 
+        (fun res i -> pos_neg i in_ill @ res) 
+        [] (List.init !nb_var (fun i -> i)) in
+    Array.of_list size1_list in
+  let create i = 
+    Random.self_init (); 
+    let formula = random_formula in_ill size size1_tbl binop_tbl unop_tbl in
+    let filename = "random_formulas/" ^ (if in_ill then "ill/" else "ll/") ^
+    "size_" ^ string_of_int size ^ "/" ^ string_of_int i in
+    let oc = open_out filename in
+    let ff = Format.formatter_of_out_channel oc in
+    print_sequent_2 ff ([], [formula]);
+    close_out oc
+  in
+  for i = 1 to int_of_string Sys.argv.(2) do  
+    create i;
+  done
 
-let () = main ()    
+let () = main ()
