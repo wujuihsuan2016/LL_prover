@@ -403,8 +403,6 @@ let rec ill_proof_to_yalla_rule = function
                   IRewrite (oc_theta, g :: gamma, h)] +++
             (ill_proof_to_yalla_rule (List.hd proof_list))
         | One_L -> 
-            let theta_list = Set_formula.elements theta in
-            let oc_theta = MapOc theta_list in
             ISeq [One_ilr] +++
             (ill_proof_to_yalla_rule (List.hd proof_list))
         | One_R -> 
@@ -535,12 +533,11 @@ let rec climb level =
     else climb (level - 1) ^ "../"
 
 let output_proof_ll l proof filename = 
-  let dir, base = Filename.dirname filename, Filename.basename filename in
-  let oc = open_out ("../miniyalla/ll_tests/" ^ dir ^ "/proof" ^ base ^ ".v") in
+  let oc = open_out filename in
   let ff = formatter_of_out_channel oc in 
   let goal, intros = string_of_goal l in
-  print_str_line ff 
-  ("Add LoadPath \"" ^ climb (nb_levels filename) ^ "\".");
+  (*print_str_line ff 
+  ("Add LoadPath \"" ^ climb (nb_levels filename) ^ "\".");*)
   print_str_line ff "Require Import miniyalla.";
   print_str_line ff goal;
   print_str_line ff "Proof.";

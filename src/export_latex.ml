@@ -57,8 +57,6 @@ let latex_flist ff l =
   else
     fprintf ff "%a@?" (pp_print_list ~pp_sep:print_sep latex_formula) l
   
-let map_wn = List.map (fun x -> Whynot x)  
-
 let latex_sequent ff sequent = 
   let theta, gamma, l = get_theta sequent, get_gamma sequent, get_list sequent in
   fprintf ff "\\vdash %a@?"  
@@ -74,6 +72,7 @@ let rec ll_proof_to_latex_one_sided ff = function
             fprintf ff "\\infer0[$\\top$]{ %a }\n@?" latex_sequent sequent
         | Bottom_intro ->
             ll_proof_to_latex_one_sided ff (List.hd proof_list);
+            fprintf ff "\\infer1[$\\bot$]{ %a }\n@?" latex_sequent sequent
         | One_intro ->
             print_str_line ff "\\infer0[$1$]{ \\vdash 1 }\n@?";
             let suffix_theta = 
@@ -464,9 +463,7 @@ let rec ill_proof_to_latex_illf ff = function
           fprintf ff "\\infer1[$act$]{ %a }\n@?" illf_latex_sequent sequent
   
 let output_proof_ll proof filename =
-  let dir, base = Filename.dirname filename, Filename.basename filename in 
-  let latex_file = "latex_export/ll/" ^ dir ^ "/proof" ^ base ^ ".tex" in
-  let oc = open_out latex_file in
+  let oc = open_out filename in
   let ff = formatter_of_out_channel oc in
   print_str_line ff "\\documentclass[a4]{article}";
   print_str_line ff "\\usepackage{amsmath}";
@@ -485,9 +482,7 @@ let output_proof_ll proof filename =
   close_out oc
 
 let output_proof_llf proof filename =
-  let dir, base = Filename.dirname filename, Filename.basename filename in 
-  let latex_file = "latex_export/ll/" ^ dir ^ "/proof" ^ base ^ "_foc.tex" in
-  let oc = open_out latex_file in
+  let oc = open_out filename in
   let ff = formatter_of_out_channel oc in
   print_str_line ff "\\documentclass[a4]{article}";
   print_str_line ff "\\usepackage{amsmath}";
@@ -506,9 +501,7 @@ let output_proof_llf proof filename =
   close_out oc
 
 let output_proof_ill proof filename =
-  let dir, base = Filename.dirname filename, Filename.basename filename in
-  let latex_file = "latex_export/ill/" ^ dir ^ "/proof" ^ base ^ ".tex" in
-  let oc = open_out latex_file in
+  let oc = open_out filename in
   let ff = formatter_of_out_channel oc in
   print_str_line ff "\\documentclass[a4]{article}";
   print_str_line ff "\\usepackage{amsmath}";
@@ -527,9 +520,7 @@ let output_proof_ill proof filename =
   close_out oc
 
 let output_proof_illf proof filename =
-  let dir, base = Filename.dirname filename, Filename.basename filename in
-  let latex_file = "latex_export/ill/" ^ dir ^ "/proof" ^ base ^ "_foc.tex" in
-  let oc = open_out latex_file in
+  let oc = open_out filename in
   let ff = formatter_of_out_channel oc in
   print_str_line ff "\\documentclass[a4]{article}";
   print_str_line ff "\\usepackage{amsmath}";

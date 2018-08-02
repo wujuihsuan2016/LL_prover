@@ -63,16 +63,16 @@ let rec print_formula_set ff s =
 
 let print_sequent ff = function
   | Async (theta, gamma, l) ->
-      fprintf ff "@[Async %a %a %a@]@." 
+      fprintf ff "@[Async %a %a %a@]@?" 
       print_formula_set theta print_formula_list gamma print_formula_list l
   | Sync (theta, gamma, f) -> 
-      fprintf ff "@[Sync %a %a @[%a@]@]@."
+      fprintf ff "@[Sync %a %a @[%a@]@]@?"
       print_formula_set theta print_formula_list gamma print_formula f
 
 let print_sequent_2 ff (left, right) =
-  fprintf ff "@[%a |- %a@]@."
+  fprintf ff "%a |- %a@?"
       (pp_print_list ~pp_sep:print_sep print_formula) left 
-      (pp_print_list ~pp_sep:print_sep print_formula) right; print_flush ()
+      (pp_print_list ~pp_sep:print_sep print_formula) right
 
 let print_rule ff = function
   | One_intro -> print_str ff "One_intro"
@@ -98,6 +98,92 @@ let rec print_proof ff = function
       fprintf ff "@[%a : %a ---> %a@]" 
       print_sequent sequent print_rule rule 
       (pp_print_list print_proof) proof_list
+
+let llf_sequent_to_ll = function
+  | Async (theta, gamma, l) ->
+      l @ gamma @ map_wn (Set_formula.elements theta)
+  | Sync (theta, gamma, f) ->
+      f :: gamma @ map_wn (Set_formula.elements theta)
+
+(* Not finished    
+let rec llf_to_ll proof = match proof with
+  | Null ->  LNull
+  | Node (llf_sequent, llf_rule, proof_list) -> 
+      let sequent = llf_sequent_to_ll llf_sequent in
+      let theta, gamma, l = 
+        get_theta llf_sequent, get_gamma llf_sequent, get_list llf_sequent in
+      match rule with
+        | Top_intro -> LNode (sequent, LTop, LNull)
+        | Bottom_intro -> 
+            LNode (sequent, LTop, [llf_to_ll (List.hd proof_list)])
+        | One_intro ->
+            let suffix_theta = 
+              List.tl (List.rev (suffix (map_wn (Set_formula.elements theta)))) in
+            let rec aux l acc = match l with
+              | [] -> acc 
+              | hd :: tl -> 
+                  aux tl (LNode (One :: hd, Lwk, acc)) in
+            aux suffix_theta (LNode ([One], LOne, LNull))
+        | Par_intro ->
+            LNode (sequent, LPar, [llf_to_ll (List.hd proof_list)])
+        | Tensor_intro (l1, l2) ->
+            let proof_list' = List.map llf_to_ll proof_list in
+            let theta_list = Set_formula.elements theta in
+            let wn_theta_list = map_wn theta_list in 
+            let suffix_theta = List.tl (suffix wn_theta_list) in
+            let rec aux l acc = match l with
+              | [] -> acc
+              | hd :: tl ->
+                  aux tl (LNode (hd @ sequent, Lcont, acc)) in
+            aux suffix_theta (LNode (wn_theta_list @ sequent, LTensor, proof_list'))
+        | With_intro ->
+            LNode (sequent, LWith, List.map llf_to_ll proof_list)
+        | Plus_intro_1 ->
+            LNode (sequent, LPlus_1, List.map llf_to_ll proof_list)
+        | Plus_intro_2 ->
+            LNode (sequent, LPlus_2, List.map llf_to_ll proof_list)
+        | OfCourse_intro ->
+            LNode (sequent, LOfCourse, List.map llf_to_ll proof_list)
+        | Whynot_intro ->
+            if Set_formula.mem f theta then
+              LNode (sequent, Lwk, List.map llf_to_ll proof_list)
+            else
+              llf_to_ll (List.hd proof_list)
+        | I1 ->
+            let theta_list = Set_formula.elements theta in
+            let dual = l @ gamma in
+            let suffix_theta = 
+              List.tl (List.rev (suffix (map_wn theta_list))) in
+            let rec aux l acc = match l with
+              | [] -> acc
+              | hd :: tl ->
+                  aux tl (LNode (hd @ dual), Lwk, acc) in
+            aux suffix_theta (LNode (dual, Lax, LNull))
+        *)
+ 
+
+
+
+
+
+
+
+
+
+
+
+ 
+
+
+                  
+              
+
+
+            
+
+ 
+
+
 
 let rec print_yalla_formula ff = function
   | Pos x -> print_str ff x 
@@ -222,9 +308,3 @@ let print_ill_sequent ff = function
       print_formula_list omega
       print_formula f
  
-
- 
-  
-
-
-

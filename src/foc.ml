@@ -147,7 +147,6 @@ let rec prove sequent select_d2 max_d2 = match sequent with
                   let ph = 
                     get_op (prove (Sync (theta, gamma2, h)) select_d2 max_d2) in
                   Some (Node (sequent, Tensor_intro (gamma1, gamma2), [pg; ph]))
-
               with NoValue ->
                 split_gamma (k - 1) in
           let k = fast_exp_2 (List.length gamma) - 1 in

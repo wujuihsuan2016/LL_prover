@@ -16,7 +16,9 @@ type formula =
   | Par of formula * formula
   | Impl of formula * formula
 
-type rule = 
+(* LLF *)
+
+type llf_rule = 
   | One_intro
   | Top_intro
   | Bottom_intro
@@ -44,12 +46,12 @@ module Set_var = Set.Make(struct type t = string let compare = compare end)
 type sequent2 = formula list * formula list 
 
 (* Triadiac sequent *)
-type sequent = 
+type llf_sequent = 
   | Async of Set_formula.t * formula list * formula list
   | Sync of Set_formula.t * formula list * formula 
 
-type proof = 
-  | Node of sequent * rule * proof list
+type llf_proof = 
+  | Node of llf_sequent * llf_rule * llf_proof list
   | Null
 
 let rec free_variables = function
@@ -123,7 +125,7 @@ let string_of_flist l =
     | hd :: tl -> (string_of_formula hd) ^ "; " ^ (string_of_list tl)
   in "[" ^ string_of_list l ^ "]"
 
-(* ILL *)
+(* ILLF *)
 
 let left_sync = function
   | With _ | Top | Impl _ | Pos _ -> true
@@ -141,12 +143,12 @@ let right_async = function
   | With _ | Top | Impl _ -> true
   | _ -> false 
 
-type ill_sequent = 
+type illf_sequent = 
   | R_focal of Set_formula.t * formula list * formula
   | L_focal of Set_formula.t * formula list * formula * formula
   | Active of Set_formula.t * formula list * formula list * formula
 
-type ill_rule = 
+type illf_rule = 
   | Tensor_L 
   | Tensor_R of (formula list * formula list)
   | Impl_L of (formula list * formula list) 
@@ -172,6 +174,29 @@ type ill_rule =
   | Rb_
   | Act 
 
-type ill_proof = 
-  | INode of ill_sequent * ill_rule * ill_proof list
+type illf_proof = 
+  | INode of illf_sequent * illf_rule * illf_proof list
   | INull
+
+(* LL *)
+
+type ll_sequent = formula list
+
+type ll_rule = 
+  | LAx
+  | LTensor 
+  | LPar
+  | LOne
+  | LBottom
+  | LPlus_1
+  | LPlus_2
+  | LWith
+  | LTop
+  | Lder
+  | Lwk
+  | Lcont
+  | LOfCourse
+
+type ll_proof = 
+  | LNode of ll_sequent * ll_rule * ll_proof list
+  | LNull

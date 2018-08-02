@@ -56,6 +56,8 @@ let get_gamma = function
   | Async (_, ga, _) -> ga
   | Sync (_, ga, _) -> ga 
 
+let map_wn = List.map (fun x -> Whynot x) 
+
 exception NoValue
 
 let get_op = function
