@@ -6,6 +6,7 @@ A Linear Logic Prover implemented in OCaml
 - OCaml >= 4.06.0 
 - [Coq](https://coq.inria.fr/opam/www/using.html) 8.8.0 
   
+
 ### Compilation
 
 To compile the LL prover,
@@ -21,23 +22,26 @@ make formulas
 ### Running tests
 To view the list of available options,
 ```
-$ prover.byte --help
+$ ./prover.byte --help
 ```
 
 To run the prover,
 ```
-$ prover.byte [options] filename
+$ ./prover.byte [options] filename
 $ File "filename": Provable. Execution time: 0.004000ms
 ```
 
 #### Available options for the prover
 - `-ill` : Choose ILL as the logical system. The system is LL by default.
 - `-inv` : Ask the prover to prove the sequent using the [inverse method](http://reports-archive.adm.cs.cmu.edu/anon/2006/CMU-CS-06-162.pdf). The backward proof search is used by default.
-- `-coq` : Generate a proof certificate that can be verified by Coq using the
-  [yalla](https://github.com/olaure01/yalla/tree/working) library.
-- `-latex` : Generate the Latex code of the proof in the fragment chosen (LL or ILL). Proofs are written in the style of sequent calculus with the package [ebproof](https://ctan.org/pkg/ebproof). Another package [cmll](https://ctan.org/pkg/cmll) is used for writing linear logic symbols.
-- `-flatex` : Generate the Latex code of the proof in the corresponding focused proof system (LLF or ILLF).
-- `-res_to_file` : Write the result in the file filename.res instead of writing to the standard output.
+- `-c` : Generate a proof certificate that can be verified by Coq using the [yalla](https://github.com/olaure01/yalla/tree/working) library.
+- `-l` : Generate the Latex code of the proof in the fragment chosen (LL or ILL). Proofs are written in the style of sequent calculus with the package [ebproof](https://ctan.org/pkg/ebproof). Another package [cmll](https://ctan.org/pkg/cmll) is used for writing linear logic symbols.
+- `-lf` : Generate the Latex code of the proof in the corresponding focused proof system (LLF or ILLF).
+- `-t` : Print the results on the standard output.
+- `-s [sequent]` : Write directly the sequent to prove.
+- `-o [foldername]` : Set the name of the folder in which the results are
+  stored. The results will not be stored and printed on the standard output by
+  default.
 - `-bound [number]` : Set a bound for the prover. For the backward proof search, this bound is a (pseudo-)upper bound on the number of applications of the contraction rule. For the inverse method, this is a upper bound on the number of copies of a sequent that we can use in a derived rule. Check the [thesis](http://reports-archive.adm.cs.cmu.edu/anon/2006/CMU-CS-06-162.pdf) of K. Chaudhuri for further details.
 
 ### Syntax 

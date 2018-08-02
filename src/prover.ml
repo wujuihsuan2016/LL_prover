@@ -14,17 +14,17 @@ let to_terminal = ref false
 let from_terminal = ref "" 
 
 let options = 
-  ["-ill", Arg.Set in_ill, "Choose ILL as the logical system"; 
-   "-inv", Arg.Set use_inverse_method, "Use the inverse method";
-   "-c", Arg.Set coq_export, "Output a proof certificate in Coq";
+  ["-ill", Arg.Set in_ill, " Choose ILL as the logical system"; 
+   "-inv", Arg.Set use_inverse_method, " Use the inverse method";
+   "-c", Arg.Set coq_export, " Output a proof certificate in Coq";
    "-l", Arg.Set latex_export, 
-   "Output the latex code of the corresponding proof tree";
+   " Output the latex code of the corresponding proof tree";
    "-lf", Arg.Set foc_latex_export, 
-   "Output the latex code of the corresponding focused proof tree";
-   "-bound", Arg.Set_int bound, "A (pseudo-)bound for the contraction rule";
-   "-o", Arg.Set_string ofile, "Set the name of output folder";
-   "-t", Arg.Set to_terminal, "Print the result in the terminal";
-   "-s", Arg.Set_string from_terminal, "The input is the standard input"]
+   " Output the latex code of the corresponding focused proof tree";
+   "-bound", Arg.Set_int bound, "<number>  A (pseudo-)bound for the contraction rule";
+   "-o", Arg.Set_string ofile, "<foldername>  Set the name of output folder";
+   "-t", Arg.Set to_terminal, " Print the result in the terminal";
+   "-s", Arg.Set_string from_terminal, " The input is the standard input"]
 
 let usage_msg = "Usage: prover.byte [option] filename"
 
@@ -55,7 +55,7 @@ let main () =
           let ff = Format.formatter_of_out_channel oc in
           let res = 
             if !use_inverse_method then Foc_ll_inv.prove_sequent sequent !bound 
-            else Foc.prove_sequent sequent !bound in
+            else Foc_ll_bwd.prove_sequent sequent !bound in
           begin match res with
             | None, _, t -> 
                 Format.fprintf ff "%a\n-\n%f\n@?" 
@@ -94,7 +94,7 @@ let main () =
           let ff = Format.formatter_of_out_channel oc in
           match !use_inverse_method with
             | true ->
-                begin match Foc_inv.prove_sequent bwd_sequent !bound with
+                begin match Foc_ill_inv.prove_sequent bwd_sequent !bound with
                   | true, t -> 
                       Format.fprintf ff "%a\nP\n%f\n@?" 
                       Printer.print_sequent_2 (formula_list1, formula_list2)
@@ -107,7 +107,7 @@ let main () =
                       close_out oc
                 end
             | false ->
-                match Foc_ill.prove_sequent bwd_sequent !bound with
+                match Foc_ill_bwd.prove_sequent bwd_sequent !bound with
                   | None, _, t ->
                       Format.fprintf ff "%a\n-\n%f\n@?" 
                       Printer.print_sequent_2 (formula_list1, formula_list2)
