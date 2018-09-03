@@ -40,8 +40,9 @@ $ File "filename": Provable. Execution time: 0.004000ms
 - `-t` : Print the results on the standard output.
 - `-s [sequent]` : Write directly the sequent to prove.
 - `-o [foldername]` : Set the name of the folder in which the results are
-  stored. The results will not be stored and printed on the standard output by
+  stored. The folder will be created under `result/ll/` or `result/ill/`. The results will not be stored and printed on the standard output by
   default.
+- `-ol` : Generate the latex code of the sequent.
 - `-bound [number]` : Set a bound for the prover. For the backward proof search, this bound is a (pseudo-)upper bound on the number of applications of the contraction rule. For the inverse method, this is a upper bound on the number of copies of a sequent that we can use in a derived rule. Check the [thesis](http://reports-archive.adm.cs.cmu.edu/anon/2006/CMU-CS-06-162.pdf) of K. Chaudhuri for further details.
 
 ### Syntax 

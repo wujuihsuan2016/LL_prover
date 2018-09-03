@@ -104,8 +104,7 @@ let llf_sequent_to_ll = function
       l @ gamma @ map_wn (Set_formula.elements theta)
   | Sync (theta, gamma, f) ->
       f :: gamma @ map_wn (Set_formula.elements theta)
-
-(* Not finished    
+(*
 let rec llf_to_ll proof = match proof with
   | Null ->  LNull
   | Node (llf_sequent, llf_rule, proof_list) -> 
@@ -140,7 +139,7 @@ let rec llf_to_ll proof = match proof with
             LNode (sequent, LWith, List.map llf_to_ll proof_list)
         | Plus_intro_1 ->
             LNode (sequent, LPlus_1, List.map llf_to_ll proof_list)
-        | Plus_intro_2 ->
+        | Plus_intro_1 ->
             LNode (sequent, LPlus_2, List.map llf_to_ll proof_list)
         | OfCourse_intro ->
             LNode (sequent, LOfCourse, List.map llf_to_ll proof_list)
@@ -159,32 +158,27 @@ let rec llf_to_ll proof = match proof with
               | hd :: tl ->
                   aux tl (LNode (hd @ dual), Lwk, acc) in
             aux suffix_theta (LNode (dual, Lax, LNull))
-        *)
- 
-
-
-
-
-
-
-
-
-
-
-
- 
-
-
-                  
-              
-
-
-            
-
- 
-
-
-
+        | I2 ->
+            let [@warning "-8"] [Pos x] = l in
+            let theta'_list = 
+              Set_formula.elements (Set_formula.remove (Neg x) theta) in
+            let suffix_theta =
+              List.tl (List.rev (suffix (map_wn theta'_list))) in
+            let rec aux l acc = match l with
+              | [] -> acc
+              | hd :: tl ->
+                  aux tl (LNode (l @ [Whynot (Neg x); Pos x], Lwk, acc))
+            let acc =
+              LNode ([Whynot (Neg x); Pos x], Lde, LNode ([Neg x; Pos x], LAx,
+              LNone)) in
+            aux suffix_theta acc
+        | D1 _ -> llf_to_ll (List.hd proof_list) 
+        | D2 f -> 
+            LNode 
+              (sequent, Lcont, 
+               LNode (Whynot f :: sequent, Lde, llf_to_ll (List.hd proof_list)))
+        | _ -> llf_to_ll (List.hd proof_list)*)
+                             
 let rec print_yalla_formula ff = function
   | Pos x -> print_str ff x 
   | Neg x -> fprintf ff "(dual %s)@?" x
@@ -289,6 +283,7 @@ let print_ill_yalla_flist ff l =
             print_formula_list gamma
             print_formula f *)
 
+(*
 let print_ill_sequent ff = function
   | R_focal (theta, gamma, f) ->
       fprintf ff "@[%a | %a >> %a@]@?"
@@ -307,4 +302,25 @@ let print_ill_sequent ff = function
       print_formula_list gamma
       print_formula_list omega
       print_formula f
- 
+
+let illf_sequent_to_ill = function
+  | R_focal (theta, gamma, f) -> map_oc theta @ gamma, f
+  | L_focal (theta, gamma, f, g) -> mat_oc theta @ (f :: gamma), g
+  | Active (theta, gamma, omega, f) -> map_oc theta @ omega @ gamma, f
+
+let rec illf_to_ill proof = match proof with
+  | INull -> ILNull
+  | INode (illf_sequent, illf_rule, proof_list) ->
+      let sequent = illf_sequent_to_ill illf_sequent in
+
+      match rule with
+        | Tensor_L ->
+            ILNode (sequent, ILTensor_L, List.map illf_to_ill proof_list)
+        | Tensor_R ->
+            let oc_theta_list = map_oc theta_list in
+            let suffix_theta = List.tl (suffix theta_list) in
+            let rec aux l  
+            *)
+      
+
+

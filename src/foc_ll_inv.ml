@@ -64,7 +64,8 @@ let rec focus f seqlist tbl = match f with
            (act (Set_formula.empty, Map_formula.empty, [g]) seqlist tbl))
   | Neg x -> 
       if seqlist = [] then
-        let f' = try Hashtbl.find tbl (Pos x) with Not_found -> Pos x in 
+        let f' = try Hashtbl.find tbl (Pos x) with Not_found ->
+          (Pos x) in 
         let map = Map_formula.add f' 1 Map_formula.empty in
         [Fwd (Set_formula.empty, Weight (false, map))]
       else
@@ -107,11 +108,16 @@ and act (theta, gamma, l) seqlist tbl = match l with
       | _ -> 
           act (theta, insert hd gamma, tl) seqlist tbl
 
-let derived_rule_pos seqlist f tbl =
-  let f' = try Hashtbl.find tbl f with Not_found -> f in 
+let derived_rule_pos gamma_0 seqlist f tbl =
+  let f' = try Hashtbl.find tbl f with Not_found -> f in  
   let [@warning "-8"] new_sequent (Fwd (theta, Weight (w, ctxt))) = 
-    Fwd (theta, Weight (w, insert f' ctxt)) in
-  List.map new_sequent (focus f seqlist tbl)
+    if not (Map_formula.mem f' gamma_0) || 
+       (try Map_formula.find f' gamma_0 with Not_found -> 0) >= 
+       (try Map_formula.find f' ctxt + 1 with Not_found -> 1)
+    then
+      [Fwd (theta, Weight (w, insert f' ctxt))]
+    else [] in
+  List.concat (List.map new_sequent (focus f seqlist tbl))
 
 let derived_rule_theta theta_0 seqlist f tbl = 
   let bl = Set_formula.mem f theta_0 in
@@ -255,7 +261,7 @@ let prove sequent =
                 (fun f ->
                    if !proved then () 
                    else
-                     let l = derived_rule_pos seqlist' f tbl in
+                     let l = derived_rule_pos gamma seqlist' f tbl in
                      List.iter 
                        (fun x ->
                           saturated := insert_data x sequent && !saturated) l)

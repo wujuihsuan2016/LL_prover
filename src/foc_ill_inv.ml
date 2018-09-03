@@ -300,11 +300,14 @@ let derived_rule_neg_theta theta_0 seqlist f tbl =
     [Forw ((if bl then theta else Set_formula.add f theta), ctxt, opt)] in 
   List.concat (List.map new_sequent (l_focus f seqlist tbl))
 
-let derived_rule_neg_gamma seqlist f tbl =
-  let new_sequent (Forw (theta, ctxt, opt)) = 
-    try 
-      [Forw (theta, simp_ctxt (Concat (ctxt, Map_formula.singleton f 1)), opt)] 
-    with ContextError -> [] in 
+let derived_rule_neg_gamma gamma_0 seqlist f tbl =
+  let [@warning "-8"] new_sequent (Forw (theta, Weight (w, ctxt), opt)) = 
+    if (try Map_formula.find f gamma_0 with Not_found -> 0) = 0 || 
+      (try Map_formula.find f gamma_0 with Not_found -> 0) >=
+      (try Map_formula.find f ctxt + 1 with Not_found -> 1)
+    then 
+      [Forw (theta, Weight (w, insert f ctxt), opt)] 
+    else [] in
   List.concat (List.map new_sequent (l_focus f seqlist tbl))
 
 let proved = ref false
@@ -424,7 +427,7 @@ let prove sequent =
               (fun f ->
                  if !proved then ()
                  else
-                   let l = derived_rule_neg_gamma seqlist' f tbl in
+                   let l = derived_rule_neg_gamma gamma seqlist' f tbl in
                    List.iter 
                      (fun x -> 
                         saturated := insert_data x sequent tbl && !saturated) l) 

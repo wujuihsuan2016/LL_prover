@@ -12,19 +12,21 @@ let file = ref ""
 let ofile = ref ""
 let to_terminal = ref false
 let from_terminal = ref "" 
+let only_latex = ref false
 
 let options = 
   ["-ill", Arg.Set in_ill, " Choose ILL as the logical system"; 
    "-inv", Arg.Set use_inverse_method, " Use the inverse method";
    "-c", Arg.Set coq_export, " Output a proof certificate in Coq";
    "-l", Arg.Set latex_export, 
-   " Output the latex code of the corresponding proof tree";
+   " Output the latex code the corresponding proof tree";
    "-lf", Arg.Set foc_latex_export, 
    " Output the latex code of the corresponding focused proof tree";
    "-bound", Arg.Set_int bound, "<number>  A (pseudo-)bound for the contraction rule";
    "-o", Arg.Set_string ofile, "<foldername>  Set the name of output folder";
    "-t", Arg.Set to_terminal, " Print the result in the terminal";
-   "-s", Arg.Set_string from_terminal, " The input is the standard input"]
+   "-s", Arg.Set_string from_terminal, " The input is the standard input";
+   "-ol", Arg.Set only_latex, " Only output the latex code of the sequent"]
 
 let usage_msg = "Usage: prover.byte [option] filename"
 
@@ -53,6 +55,13 @@ let main () =
             if !ofile = "" || !to_terminal then stdout
             else open_out (folder ^ "/result.txt") in
           let ff = Format.formatter_of_out_channel oc in
+          (if !only_latex then begin
+            let oc' = 
+              if !ofile = "" || !to_terminal then stdout
+              else open_out (folder ^ "/sequent.tex") in
+            let ff' = Format.formatter_of_out_channel oc' in
+            Export_latex.print_latex_sequent ff' (formula_list1, formula_list2);
+            exit 0 end);
           let res = 
             if !use_inverse_method then Foc_ll_inv.prove_sequent sequent !bound 
             else Foc_ll_bwd.prove_sequent sequent !bound in
@@ -69,7 +78,7 @@ let main () =
                 close_out oc;
                 if bl then begin try
                   let proof = get_op opt in
-                                    (if !latex_export then 
+                  (if !latex_export then 
                     Export_latex.output_proof_ll proof (folder ^ "/proof.tex"));
                   (if !foc_latex_export then 
                     Export_latex.output_proof_llf proof 
@@ -92,6 +101,13 @@ let main () =
             if !to_terminal then stdout
             else open_out (folder ^ "/result.txt") in
           let ff = Format.formatter_of_out_channel oc in
+          (if !only_latex then begin
+            let oc' = 
+              if !ofile = "" || !to_terminal then stdout
+              else open_out (folder ^ "/sequent.tex") in
+            let ff' = Format.formatter_of_out_channel oc' in
+            Export_latex.print_ill_latex_sequent ff' bwd_sequent;
+            exit 0 end);
           match !use_inverse_method with
             | true ->
                 begin match Foc_ill_inv.prove_sequent bwd_sequent !bound with

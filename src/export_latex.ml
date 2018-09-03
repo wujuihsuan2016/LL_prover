@@ -62,6 +62,23 @@ let latex_sequent ff sequent =
   fprintf ff "\\vdash %a@?"  
   latex_flist (map_wn (Set_formula.elements theta) @ gamma @ l)
 
+let latex_sequent_2 ff (l1, l2) = 
+  fprintf ff "%a \\vdash %a@?" latex_flist l1 latex_flist l2
+
+let print_latex_sequent ff sequent =
+  print_str_line ff "\\documentclass[a4]{article}";
+  print_str_line ff "\\usepackage{amsmath}";
+  print_str_line ff "\\usepackage{ebproof}";
+  print_str_line ff "\\usepackage{cmll}";
+  print_str_line ff "\\usepackage{txfonts}";
+  print_str_line ff "\\usepackage[a4paper, margin = 1.5cm]{geometry}";
+  print_str_line ff "\\usepackage{graphics}";
+  print_str_line ff "\\begin{document}";
+  print_str_line ff "\\center";
+  print_str_line ff "\\resizebox{\\textwidth}{!}{";
+  Format.fprintf ff "$%a$}\n@?" latex_sequent_2 sequent;
+  print_str_line ff "\\end{document}"
+ 
 let rec ll_proof_to_latex_one_sided ff = function
   | Null -> ()
   | Node (sequent, rule, proof_list) ->
@@ -242,6 +259,21 @@ let ill_latex_sequent ff = function
       fprintf ff "%a \\vdash %a@?"
       latex_flist (map_oc (Set_formula.elements theta) @ l @ gamma)
       latex_formula f
+
+let print_ill_latex_sequent ff sequent = 
+  print_str_line ff "\\documentclass[a4]{article}";
+  print_str_line ff "\\usepackage{amsmath}";
+  print_str_line ff "\\usepackage{ebproof}";
+  print_str_line ff "\\usepackage{cmll}";
+  print_str_line ff "\\usepackage{txfonts}";
+  print_str_line ff "\\usepackage[a4paper, margin = 1.5cm]{geometry}";
+  print_str_line ff "\\usepackage{graphics}";
+  print_str_line ff "\\begin{document}";
+  print_str_line ff "\\center";
+  print_str_line ff "\\resizebox{\\textwidth}{!}{";
+  Format.fprintf ff "$%a$}\n@?" ill_latex_sequent sequent;
+  print_str_line ff "\\end{document}"
+
 
 let rec ill_proof_to_latex ff = function
   | INull -> ()
