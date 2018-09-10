@@ -149,10 +149,22 @@ let main () =
                       end
   with
     | Lexer.Lexing_error msg ->
+        let folder = (if !in_ill then "result/ill/" else "result/ll/") ^ !ofile in
+        let oc = 
+          if !ofile = "" || !to_terminal then stdout
+          else open_out (folder ^ "/result.txt") in
+        output_string oc "error";
+        close_out oc;
         locate (Lexing.lexeme_start_p buf);
         Format.eprintf "%s@?" msg;
         exit 1
     | Parser.Error ->
+        let folder = (if !in_ill then "result/ill/" else "result/ll/") ^ !ofile in
+        let oc = 
+          if !ofile = "" || !to_terminal then stdout
+          else open_out (folder ^ "/result.txt") in
+        output_string oc "error";
+        close_out oc;
         locate (Lexing.lexeme_start_p buf);
         Format.eprintf "Syntax error@?";
         exit 1
