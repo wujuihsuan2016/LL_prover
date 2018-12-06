@@ -13,6 +13,7 @@ let ofile = ref ""
 let to_terminal = ref false
 let from_terminal = ref "" 
 let only_latex = ref false
+let lltp_format = ref false
 
 let options = 
   ["-ill", Arg.Set in_ill, " Choose ILL as the logical system"; 
@@ -26,6 +27,7 @@ let options =
    "-o", Arg.Set_string ofile, "<foldername>  Set the name of output folder";
    "-t", Arg.Set to_terminal, " Print the result in the terminal";
    "-s", Arg.Set_string from_terminal, " The input is the standard input";
+   "-lltp", Arg.Set lltp_format, " Input in LLTP format";
    "-ol", Arg.Set only_latex, " Only output the latex code of the sequent"]
 
 let usage_msg = "Usage: prover.byte [option] filename"
@@ -43,7 +45,9 @@ let main () =
     if !from_terminal = "" then Lexing.from_channel (open_in !file)
     else Lexing.from_string !from_terminal in
   try 
-    let (formula_list1, formula_list2) = Parser.file Lexer.token buf in 
+    let (formula_list1, formula_list2) = 
+      if !lltp_format then Parser.lltp_file Lexer.lltp_token buf
+      else Parser.file Lexer.token buf in 
     match not !in_ill with
       | true -> 
           let l = 

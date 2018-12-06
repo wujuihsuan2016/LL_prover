@@ -38,6 +38,7 @@ $ File "filename": Provable. Execution time: 0.004000ms
 - `-l` : Generate the Latex code of the proof in the fragment chosen (LL or ILL). Proofs are written in the style of sequent calculus with the package [ebproof](https://ctan.org/pkg/ebproof). Another package [cmll](https://ctan.org/pkg/cmll) is used for writing linear logic symbols.
 - `-lf` : Generate the Latex code of the proof in the corresponding focused proof system (LLF or ILLF).
 - `-t` : Print the results on the standard output.
+- `-lltp` : Set input format to [LLTP format](https://github.com/meta-logic/lltp).
 - `-s [sequent]` : Write directly the sequent to prove.
 - `-o [foldername]` : Set the name of the folder in which the results are
   stored. The folder will be created under `result/ll/` or `result/ill/`. The results will not be stored and printed on the standard output by
