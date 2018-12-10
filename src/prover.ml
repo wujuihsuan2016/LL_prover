@@ -102,7 +102,7 @@ let main () =
           let bwd_sequent = Active (Set_formula.empty, [], omega, formula) in
           let folder = "result/ill/" ^ !ofile in
           let oc = 
-            if !to_terminal then stdout
+            if !ofile = "" || !to_terminal then stdout
             else open_out (folder ^ "/result.txt") in
           let ff = Format.formatter_of_out_channel oc in
           (if !only_latex then begin
