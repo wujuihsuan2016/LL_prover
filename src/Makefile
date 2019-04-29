@@ -1,11 +1,11 @@
 default: 
-	ocamlbuild -use-menhir -use-ocamlfind test.byte
+	ocamlbuild -lib unix -use-menhir -use-ocamlfind prover.byte
 
 gen:
-	ocamlbuild -use-menhir -use-ocamlfind formula_generator.byte
+	ocamlbuild -lib unix -use-menhir -use-ocamlfind formula_generator.byte
 
 gen_lcm:
-	ocamlbuild -use-ocamlfind sequent_generator.byte
+	ocamlbuild -lib unix -use-ocamlfind sequent_generator.byte
 
 counterexample:
 	ocamlbuild -lib unix -use-menhir -use-ocamlfind ll_ill.byte

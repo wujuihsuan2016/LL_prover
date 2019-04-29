@@ -1,17 +1,23 @@
+(*** Forward proof search in LL using the focused inverse method ***)
+
 open Formula
 open Fctns 
 open Format
 open Fctns_inv
 open Printer
 
+(* [max_nb_copies] is maximum number of occurrences of a sequent in the list
+   of sequents used for generating new provable sequents. *)
 let max_nb_copies = ref 1
 
 type ll_forward_sequent = Fwd of Set_formula.t * context
 
+(* [is_weak seq] checks if the sequent [seq] is weak. *)
 let is_weak (Fwd (_, ctxt)) = match ctxt with
   | Weight (w, _) -> w
   | _ -> false
 
+(* [is_strong seq] checks if the sequent [seq] is strong. *)
 let is_strong x = not (is_weak x)
 
 let [@warning "-8"] print_forward_sequent ff 
@@ -28,6 +34,9 @@ let [@warning "-8"] print_forward_sequent ff
 let print_sequent_list ff l =
   fprintf ff "{ %a }@?" 
   (pp_print_list ~pp_sep:print_sep print_forward_sequent) l
+
+(** Operations on sequents
+    (cf. https://wujuihsuan2016.github.io/files/rapport_APLL.pdf) **)
 
 let tens_seq (Fwd (theta, ctxt)) (Fwd (theta', ctxt')) =
   try [Fwd (Set_formula.union theta theta', simp_ctxt (CTimes (ctxt, ctxt')))]
@@ -78,7 +87,10 @@ let rec focus f seqlist tbl = match f with
 and act (theta, gamma, l) seqlist tbl = match l with
   | [] -> begin
       try 
-        let [@warning "-8"] [Fwd (theta', Weight (w, gamma'))] = seqlist in
+        let theta', (w, gamma') = 
+          match seqlist with 
+            | [Fwd (theta', Weight (w, gamma'))] -> theta', (w, gamma')
+            | _ -> assert false in
         let gamma'' = 
           map_map (Hashtbl.find tbl) gamma in
         [Fwd (Set_formula.diff theta' theta, Weight (w, diff gamma' gamma''))]

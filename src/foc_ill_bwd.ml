@@ -1,12 +1,18 @@
+(*** Backward proof search in ILL (ILLF) ***)
+
 open Formula
 open Fctns
 open Printer
 
-let bl = ref false
-
-(* The pseudo-upperbound of the number of applications of the copy rule *)
+(* [cst_max_copy] is the (pseudo-)bound on the number of applications of the copy
+   rule. *)
 let cst_max_copy = 4
 
+(* [bl] indicates if [cst_max_copy] is reached. *)
+let bl = ref false
+
+(* [get_atoms f] returns the set of atoms in [f]. When a negative atom is found,
+   we store its corresponding positive atom instead. *)
 let rec get_atoms = function
   | Tensor (f, g) | Plus (f, g) | With (f, g) | Par (f, g) | Impl (f, g) ->
       Set_formula.union (get_atoms f) (get_atoms g)
@@ -14,6 +20,7 @@ let rec get_atoms = function
   | Neg x | Pos x -> Set_formula.singleton (Pos x)
   | _ -> Set_formula.empty
 
+(* [get_atoms_sequent sequent] returns the set of atoms in [sequent]. *)
 let get_atoms_sequent sequent = 
   let l = match sequent with
     | Active (theta, gamma, omega, f) -> 
@@ -25,6 +32,9 @@ let get_atoms_sequent sequent =
   List.fold_left 
     (fun res f -> Set_formula.union res (get_atoms f)) Set_formula.empty l
 
+(* [prove sequent select_copy max_copy] attempts to prove the sequent [sequent]
+   where [select_copy] contains the candidates for the Copy rule and [max_copy]
+   is a (pseudo-)bound on the number of applications of the Copy rule. *)
 let rec prove sequent select_copy max_copy =  
   match sequent with
     | R_focal (theta, gamma, f) -> begin match f with
@@ -288,6 +298,12 @@ let rec prove sequent select_copy max_copy =
                     with NoValue -> None end
                 | _ -> None 
 
+(* [prove_sequent sequent cst_max_copy] attempts to prove [sequent] and returns
+   the result [(res, proof, time)].
+   [res] = None if the bound [cst_max_copy] is reached, and [res] = (Some b)
+   when the proof search has been finished and b indicates the provability of
+   [sequent]. When the sequent is provable, [proof] contains the proof found.
+   *)
 let prove_sequent sequent cst_max_copy = 
   bl := false;
   let t = Sys.time () in

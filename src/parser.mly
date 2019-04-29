@@ -1,6 +1,7 @@
 %{    
    open List
    open Formula
+   open Fctns
 %}
 
 %token COMMA

@@ -1,4 +1,7 @@
-(* Definition of formulas of propositional linear logic *)
+(*** Basic definitions of formulas, sequents and rules ***)
+
+(** Definition of formulas of propositional linear logic **)
+
 type atom = string
 
 type formula = 
@@ -16,7 +19,7 @@ type formula =
   | Par of formula * formula
   | Impl of formula * formula
 
-(* LLF *)
+(** LLF **)
 
 type llf_rule = 
   | One_intro
@@ -45,7 +48,6 @@ module Set_var = Set.Make(struct type t = string let compare = compare end)
 
 type sequent2 = formula list * formula list 
 
-(* Triadiac sequent *)
 type llf_sequent = 
   | Async of Set_formula.t * formula list * formula list
   | Sync of Set_formula.t * formula list * formula 
@@ -53,95 +55,8 @@ type llf_sequent =
 type llf_proof = 
   | Node of llf_sequent * llf_rule * llf_proof list
   | Null
-
-let rec free_variables = function
-  | Pos x | Neg x -> Set_var.of_list [x]
-  | One | Zero | Top | Bottom -> Set_var.empty
-  | OfCourse f | Whynot f -> free_variables f
-  | Tensor (f, g) | Par (f, g) | Plus (f, g) | With (f, g) | Impl (f, g) -> 
-      Set_var.union (free_variables f) (free_variables g)
    
-let rec neg_formula = function
-  | Pos x -> Neg x
-  | Neg x -> Pos x
-  | One -> Bottom
-  | Zero -> Top 
-  | Top -> Zero
-  | Bottom -> One
-  | OfCourse f -> Whynot (neg_formula f)
-  | Whynot f -> OfCourse (neg_formula f)
-  | Tensor (f, g) -> Par (neg_formula f, neg_formula g)
-  | Par (f, g) -> Tensor (neg_formula f, neg_formula g)
-  | Plus (f, g) -> With (neg_formula f, neg_formula g)
-  | With (f, g) -> Plus (neg_formula f, neg_formula g)
-  | Impl (f, g) -> Tensor (rewrite f, neg_formula g)
-
-and rewrite = function
-  | Impl (f, g) -> Par (neg_formula f, rewrite g)
-  | OfCourse f -> OfCourse (rewrite f)
-  | Whynot f -> Whynot (rewrite f)
-  | Tensor (f, g) -> Tensor (rewrite f, rewrite g)
-  | Par (f, g) -> Par (rewrite f, rewrite g)
-  | Plus (f, g) -> Plus (rewrite f, rewrite g)
-  | With (f, g) -> With (rewrite f, rewrite g)
-  | f -> f
-
-let rec string_of_formula = function
-  | Pos x -> x
-  | Neg x -> "(dual " ^ x ^ ")"
-  | One -> "one"
-  | Zero -> "zero" 
-  | Top -> "top" 
-  | Bottom -> "bot"
-  | OfCourse f -> 
-      let s = string_of_formula f in
-      "(oc " ^ s ^ ")"
-  | Whynot f ->
-      let s = string_of_formula f in
-      "(wn " ^ s ^ ")"
-  | Tensor (f, g) ->
-      let sf = string_of_formula f in
-      let sg = string_of_formula g in
-      "(tens " ^ sf ^ " " ^ sg ^ ")"
-  | Par (f, g) -> 
-      let sf = string_of_formula f in
-      let sg = string_of_formula g in
-      "(parr " ^ sf ^ " " ^ sg ^ ")"
-  | Plus (f, g) ->
-      let sf = string_of_formula f in
-      let sg = string_of_formula g in
-      "(aplus " ^ sf ^ " " ^ sg ^ ")"
-  | With (f, g) ->
-      let sf = string_of_formula f in
-      let sg = string_of_formula g in
-      "(awith " ^ sf ^ " " ^ sg ^ ")"
-  | Impl (f, g) ->
-      assert false 
-
-let string_of_flist l =
-  let rec string_of_list = function
-    | [] -> ""
-    | [x] -> string_of_formula x 
-    | hd :: tl -> (string_of_formula hd) ^ "; " ^ (string_of_list tl)
-  in "[" ^ string_of_list l ^ "]"
-
-(* ILLF *)
-
-let left_sync = function
-  | With _ | Top | Impl _ | Pos _ -> true
-  | _ -> false
-
-let right_sync = function
-  | Tensor _ | Zero | One | OfCourse _ | Pos _ | Plus _ -> true
-  | _ -> false
-
-let left_async = function 
-  | Tensor _ | Zero | One | OfCourse _ | Plus _ -> true
-  | _ -> false
-
-let right_async = function
-  | With _ | Top | Impl _ -> true
-  | _ -> false 
+(** ILLF **)
 
 type illf_sequent = 
   | R_focal of Set_formula.t * formula list * formula
@@ -178,7 +93,7 @@ type illf_proof =
   | INode of illf_sequent * illf_rule * illf_proof list
   | INull
 
-(* LL *)
+(** LL **)
 
 type ll_sequent = formula list
 
@@ -200,3 +115,32 @@ type ll_rule =
 type ll_proof = 
   | LNode of ll_sequent * ll_rule * ll_proof list
   | LNull
+
+(** ILL **)
+
+type ill_sequent = formula list * formula
+
+type ill_rule =
+  | ILAx
+  | ILTensor_L
+  | ILTensor_R
+  | ILOne_L
+  | ILOne_R
+  | ILImpl_L
+  | ILImpl_R
+  | ILPlus_L
+  | ILPlus_R_1
+  | ILPlus_R_2
+  | ILZero_L
+  | ILWith_L_1
+  | ILWith_L_2
+  | ILWith_R
+  | ILTop_R
+  | ILwk_L
+  | ILcont_L
+  | ILder_L
+  | ILOfCourse_R
+
+type ill_proof =
+  | ILNode of ill_sequent * ill_rule * ill_proof list
+  | ILNull

@@ -1,14 +1,24 @@
+(*** Export to LaTeX ***)
+
 open Formula
 open Format
 open Printer
 open Fctns 
 
+(* [latex_unop ff fmt f] formats the formula [f] according to the format
+   string [fmt] and outputs the resulting string on the formatter [ff].
+   This function is used to print [op f] where [op] is a unary connective, by
+   setting [fmt] = "[op] %a". *)
 let rec latex_unop ff fmt f =
   if not (is_binop f) then
     fprintf ff fmt latex_formula f
   else
     fprintf ff fmt latex_formula_with_paren f
 
+(* [latex_binop ff fmt f g] formats the formula [f] and [g] according to the
+   format string [fmt] and outputs the resulting string on the formatter [ff].
+   This function is used to print [op (f, g)] where [op] is a binary connective,
+   by setting [fmt] = "%a [op] %a" *)
 and latex_binop ff fmt f g =
   if not (is_binop f) then
     if not (is_binop g) then
@@ -21,6 +31,8 @@ and latex_binop ff fmt f g =
     else
       fprintf ff fmt latex_formula_with_paren f latex_formula_with_paren g
 
+(* [latex_formula ff f] outputs the latex-code formula [f] on the formatter
+   [ff]. *)
 and latex_formula ff = function 
   | Pos s -> print_str ff s
   | Neg s -> fprintf ff "%s^{\\perp}@?" s
@@ -41,27 +53,31 @@ and latex_formula ff = function
   | Impl (f, g) -> 
       latex_binop ff "%a \\multimap %a@?" f g
 
+(* [latex_formula_with_paren ff f] outputs the latex code of the formula [f]
+   enclosed in parentheses on the formatter [ff]. *)
 and latex_formula_with_paren ff formula = 
   fprintf ff "(%a)" latex_formula formula
 
-let rec suffix = function
-  | [] -> [[]]
-  | hd :: tl -> 
-      (hd :: tl) :: (suffix tl)
-
+(* [print_sep ff ()] outputs the separator (comma) on the formatter [ff]. *)
 let print_sep ff () =
   fprintf ff "%s" ", "
 
+(* [latex_flist ff l] outputs the latex code of the list [l] of formulas
+   separated by commas on the formatter [ff]. *)
 let latex_flist ff l =
   if l = [] then fprintf ff "\\cdot"
   else
     fprintf ff "%a@?" (pp_print_list ~pp_sep:print_sep latex_formula) l
-  
+
+(* [latex_sequent ff sequent] outputs the latex code of the one-sided sequent
+   [sequent] on the formatter [ff]. *)
 let latex_sequent ff sequent = 
   let theta, gamma, l = get_theta sequent, get_gamma sequent, get_list sequent in
   fprintf ff "\\vdash %a@?"  
   latex_flist (map_wn (Set_formula.elements theta) @ gamma @ l)
 
+(* [latex_sequent_2 ff sequent] outputs the latex code of the two-sided sequent
+   [sequent] on the formatter [ff]. *)
 let latex_sequent_2 ff (l1, l2) = 
   fprintf ff "%a \\vdash %a@?" latex_flist l1 latex_flist l2
 
@@ -78,7 +94,11 @@ let print_latex_sequent ff sequent =
   print_str_line ff "\\resizebox{\\textwidth}{!}{";
   Format.fprintf ff "$%a$}\n@?" latex_sequent_2 sequent;
   print_str_line ff "\\end{document}"
- 
+
+(** LL **)
+
+(* [ll_proof_to_latex_one_sided ff proof] outputs the latex code of the LL
+   proof corresponding to the LLF proof [proof] on the formatter [ff]. *)
 let rec ll_proof_to_latex_one_sided ff = function
   | Null -> ()
   | Node (sequent, rule, proof_list) ->
@@ -101,36 +121,33 @@ let rec ll_proof_to_latex_one_sided ff = function
               suffix_theta
         | Par_intro ->
             ll_proof_to_latex_one_sided ff (List.hd proof_list);
-            fprintf ff "\\infer1[$\parr$]{ %a }\n@?" latex_sequent sequent
+            fprintf ff "\\infer1[$\\parr$]{ %a }\n@?" latex_sequent sequent
         | Tensor_intro (l1, l2) ->
-            let [@warning "-8"] [br1; br2] = proof_list in
-            ll_proof_to_latex_one_sided ff br1;
-            ll_proof_to_latex_one_sided ff br2;
+            List.iter (ll_proof_to_latex_one_sided ff) proof_list;
             let theta_list = Set_formula.elements theta in 
             let theta_list' = ref theta_list in
-            fprintf ff "\\infer2[$\otimes$]{ \\vdash %a }\n@?" 
+            fprintf ff "\\infer2[$\\otimes$]{ \\vdash %a }\n@?"
             latex_flist (map_wn (theta_list @ theta_list) @ gamma @ l);  
             while !theta_list' <> [] do
               theta_list' := List.tl !theta_list';
-              fprintf ff "\\infer1[$co$]{ \\vdash %a }\n@?" latex_flist (map_wn
-              (!theta_list' @ theta_list) @ gamma @ l)
+              fprintf ff "\\infer1[$co$]{ \\vdash %a }\n@?" latex_flist
+              (map_wn (!theta_list' @ theta_list) @ gamma @ l)
             done
         | With_intro ->
-            let [@warning "-8"] [br1; br2] = proof_list in
-            ll_proof_to_latex_one_sided ff br1;
-            ll_proof_to_latex_one_sided ff br2;
-            fprintf ff "\\infer2[$\with$]{ %a }\n@?" latex_sequent sequent
+            List.iter (ll_proof_to_latex_one_sided ff) proof_list;
+            fprintf ff "\\infer2[$\\with$]{ %a }\n@?" latex_sequent sequent
         | Plus_intro_1 ->
             ll_proof_to_latex_one_sided ff (List.hd proof_list);
-            fprintf ff "\\infer1[$\oplus_1$]{ %a }\n@?" latex_sequent sequent
+            fprintf ff "\\infer1[$\\oplus_1$]{ %a }\n@?" latex_sequent sequent
         | Plus_intro_2 ->
             ll_proof_to_latex_one_sided ff (List.hd proof_list);
-            fprintf ff "\\infer1[$\oplus_2$]{ %a }\n@?" latex_sequent sequent
+            fprintf ff "\\infer1[$\\oplus_2$]{ %a }\n@?" latex_sequent sequent
         | OfCourse_intro ->
             ll_proof_to_latex_one_sided ff (List.hd proof_list);
             fprintf ff "\\infer1[$!$]{ %a }\n@?" latex_sequent sequent
         | Whynot_intro ->
-            let [@warning "-8"] (Whynot f) :: l' = l in
+            let f, l' =
+              match l with (Whynot f) :: l' -> (f, l') | _ -> assert false in
             if Set_formula.mem f theta then begin
               ll_proof_to_latex_one_sided ff (List.hd proof_list);
               fprintf ff "\\infer1[$wk$]{ %a }\n@?" latex_sequent sequent
@@ -150,10 +167,11 @@ let rec ll_proof_to_latex_one_sided ff = function
                   (map_wn x @ gamma @ l)) 
                 suffix_theta
         | I2 ->
-            let [@warning "-8"] [Pos x] = l in
+            let x = match l with [Pos x] -> x | _ -> assert false in
             let theta'_list = 
               Set_formula.elements (Set_formula.remove (Neg x) theta) in 
-            fprintf ff "\\infer0[$ax$]{ \\vdash %a }\n@?" latex_flist [Neg x; Pos x];
+            fprintf ff "\\infer0[$ax$]{ \\vdash %a }\n@?"
+            latex_flist [Neg x; Pos x];
             fprintf ff "\\infer1[$de$]{ \\vdash %a }\n@?" 
             latex_flist [Whynot (Neg x); Pos x];
             let suffix_theta = 
@@ -164,7 +182,6 @@ let rec ll_proof_to_latex_one_sided ff = function
                  (map_wn y @
                  [Whynot (Neg x); Pos x])) 
               suffix_theta
-
         | D1 _ ->
             ll_proof_to_latex_one_sided ff (List.hd proof_list)
         | D2 f ->
@@ -177,6 +194,8 @@ let rec ll_proof_to_latex_one_sided ff = function
 
 (* LLF *)
 
+(* [llf_latex_sequent ff sequent] outputs the latex code of the LLF sequent
+   [sequent] on the formatter [ff]. *)
 let llf_latex_sequent ff = function
   | Async (theta, gamma, l) -> 
       fprintf ff "\\vdash %a : %a \\Uparrow %a@?"
@@ -189,6 +208,8 @@ let llf_latex_sequent ff = function
       latex_flist gamma
       latex_formula f
 
+(* [ll_proof_to_latex_llf ff proof] outputs the latex code of the LLF proof
+   [proof]. *)
 let rec ll_proof_to_latex_llf ff = function
   | Null -> ()
   | Node (sequent, rule, proof_list) -> match rule with
@@ -201,23 +222,19 @@ let rec ll_proof_to_latex_llf ff = function
           fprintf ff "\\infer0[$1$]{ %a }\n@?" llf_latex_sequent sequent
       | Par_intro -> 
           ll_proof_to_latex_llf ff (List.hd proof_list);
-          fprintf ff "\\infer1[$\parr$]{ %a }\n@?" llf_latex_sequent sequent
+          fprintf ff "\\infer1[$\\parr$]{ %a }\n@?" llf_latex_sequent sequent
       | Tensor_intro _ -> 
-          let [@warning "-8"] [br1; br2] = proof_list in
-          ll_proof_to_latex_llf ff br1;
-          ll_proof_to_latex_llf ff br2;
-          fprintf ff "\\infer2[$\otimes$]{ %a }\n@?" llf_latex_sequent sequent
+          List.iter (ll_proof_to_latex_llf ff) proof_list;
+          fprintf ff "\\infer2[$\\otimes$]{ %a }\n@?" llf_latex_sequent sequent
       | With_intro -> 
-          let [@warning "-8"] [br1; br2] = proof_list in
-          ll_proof_to_latex_llf ff br1;
-          ll_proof_to_latex_llf ff br2;
-          fprintf ff "\\infer2[$\with$]{ %a }\n@?" llf_latex_sequent sequent
+          List.iter (ll_proof_to_latex_llf ff) proof_list;
+          fprintf ff "\\infer2[$\\with$]{ %a }\n@?" llf_latex_sequent sequent
       | Plus_intro_1 -> 
           ll_proof_to_latex_llf ff (List.hd proof_list);
-          fprintf ff "\\infer1[$\oplus_1$]{ %a }\n@?" llf_latex_sequent sequent
+          fprintf ff "\\infer1[$\\oplus_1$]{ %a }\n@?" llf_latex_sequent sequent
       | Plus_intro_2 ->
           ll_proof_to_latex_llf ff (List.hd proof_list);
-          fprintf ff "\\infer1[$\oplus_2$]{ %a }\n@?" llf_latex_sequent sequent
+          fprintf ff "\\infer1[$\\oplus_2$]{ %a }\n@?" llf_latex_sequent sequent
       | OfCourse_intro ->
           ll_proof_to_latex_llf ff (List.hd proof_list);
           fprintf ff "\\infer1[$!$]{ %a }\n@?" llf_latex_sequent sequent
@@ -236,30 +253,34 @@ let rec ll_proof_to_latex_llf ff = function
           fprintf ff "\\infer1[$D_2$]{ %a }\n@?" llf_latex_sequent sequent
       | R_async ->
           ll_proof_to_latex_llf ff (List.hd proof_list);
-          fprintf ff "\\infer1[$R_{\Uparrow}$]{ %a }\n@?" 
+          fprintf ff "\\infer1[$R_{\\Uparrow}$]{ %a }\n@?"
           llf_latex_sequent sequent
       | R_sync ->
           ll_proof_to_latex_llf ff (List.hd proof_list);
-          fprintf ff "\\infer1[$R_{\Downarrow}$]{ %a }\n@?"
+          fprintf ff "\\infer1[$R_{\\Downarrow}$]{ %a }\n@?"
           llf_latex_sequent sequent 
-(* ILL *)
 
-let map_oc = List.map (fun x -> OfCourse x)
+(** ILL **)
 
+(* [ill_latex_sequent ff sequent] outputs the latex code of the ILL sequent
+   corresponding to the ILLF sequent [sequent]. *)
 let ill_latex_sequent ff = function
   | R_focal (theta, gamma, f) ->
       fprintf ff "%a \\vdash %a@?"
-      latex_flist (map_oc (Set_formula.elements theta) @ gamma)
+      latex_flist (map_oc theta @ gamma)
       latex_formula f
   | L_focal (theta, gamma, f, g) -> 
       fprintf ff "%a \\vdash %a@?"
-      latex_flist (map_oc (Set_formula.elements theta) @ (f :: gamma))
+      latex_flist (map_oc theta @ (f :: gamma))
       latex_formula g
   | Active (theta, gamma, l, f) ->
       fprintf ff "%a \\vdash %a@?"
-      latex_flist (map_oc (Set_formula.elements theta) @ l @ gamma)
+      latex_flist (map_oc theta @ l @ gamma)
       latex_formula f
 
+(* [print_ill_latex_sequent ff sequent] outputs the latex code that can be
+   compiled to a single file of the ILL sequent corresponding to the ILLF
+   sequent [sequent]. *)
 let print_ill_latex_sequent ff sequent = 
   print_str_line ff "\\documentclass[a4]{article}";
   print_str_line ff "\\usepackage{amsmath}";
@@ -274,7 +295,8 @@ let print_ill_latex_sequent ff sequent =
   Format.fprintf ff "$%a$}\n@?" ill_latex_sequent sequent;
   print_str_line ff "\\end{document}"
 
-
+(* [ill_proof_to_latex ff proof] ouptuts the latex code of the ILL proof
+   corresponding to the ILLF proof [proof]. *)
 let rec ill_proof_to_latex ff = function
   | INull -> ()
   | INode (sequent, rule, proof_list) ->
@@ -284,37 +306,33 @@ let rec ill_proof_to_latex ff = function
       match rule with
         | Tensor_L ->
             ill_proof_to_latex ff (List.hd proof_list);
-            fprintf ff "\\infer1[$\otimes_L$]{ %a }\n@?"
+            fprintf ff "\\infer1[$\\otimes_L$]{ %a }\n@?"
             ill_latex_sequent sequent
         | Tensor_R (gamma1, gamma2) ->
-            let [@warning "-8"] [br1; br2] = proof_list in
-            ill_proof_to_latex ff br1;
-            ill_proof_to_latex ff br2;
-            fprintf ff "\\infer2[$\otimes_R$]{ %a \\vdash %a }\n@?"
-            latex_flist (map_oc (theta_list @ theta_list) @ gamma)
+            List.iter (ill_proof_to_latex ff) proof_list;
+            fprintf ff "\\infer2[$\\otimes_R$]{ %a \\vdash %a }\n@?"
+            latex_flist (map_oc' (theta_list @ theta_list) @ gamma)
             latex_formula formula;
             let suffix_theta = List.tl (suffix theta_list) in
             List.iter 
               (fun x -> 
                  fprintf ff "\\infer1[$co_L$]{ %a \\vdash %a }\n@?"
-                 latex_flist (map_oc (x @ theta_list) @ gamma)
+                 latex_flist (map_oc' (x @ theta_list) @ gamma)
                  latex_formula formula) suffix_theta
         | Impl_L (gamma1, gamma2) ->
-            let [@warning "-8"] [br1; br2] = proof_list in
-            ill_proof_to_latex ff br1;
-            ill_proof_to_latex ff br2;
-            fprintf ff "\\infer2[$\multimap_L$]{ %a \\vdash %a}\n@?"
-            latex_flist (map_oc (theta_list @ theta_list) @ gamma)
+            List.iter (ill_proof_to_latex ff) proof_list;
+            fprintf ff "\\infer2[$\\multimap_L$]{ %a \\vdash %a}\n@?"
+            latex_flist (map_oc' (theta_list @ theta_list) @ gamma)
             latex_formula formula;
             let suffix_theta = List.tl (suffix theta_list) in
             List.iter 
               (fun x ->
                  fprintf ff "\\infer1[$co_L$]{ %a \\vdash %a}\n@?"
-                 latex_flist (map_oc (x @ theta_list) @ gamma)
+                 latex_flist (map_oc' (x @ theta_list) @ gamma)
                  latex_formula formula) suffix_theta
         | Impl_R ->
             ill_proof_to_latex ff (List.hd proof_list);
-            fprintf ff "\\infer1[$\multimap_R$]{ %a }\n@?"
+            fprintf ff "\\infer1[$\\multimap_R$]{ %a }\n@?"
             ill_latex_sequent sequent
         | One_L ->
             ill_proof_to_latex ff (List.hd proof_list);
@@ -327,11 +345,11 @@ let rec ill_proof_to_latex ff = function
             List.iter 
               (fun x ->
                 fprintf ff "\\infer1[$wk_L$]{ %a \\vdash 1}\n@?"
-                latex_flist (map_oc x)) suffix_theta
+                latex_flist (map_oc' x)) suffix_theta
         | Init ->
             fprintf ff "\\infer0[$ax$]{ %a \\vdash %a }\n@?"
             latex_formula formula latex_formula formula;
-            let suffix_theta = List.tl (List.rev (suffix (map_oc theta_list))) 
+            let suffix_theta = List.tl (List.rev (suffix (map_oc' theta_list)))
             in
             List.iter 
               (fun x ->
@@ -342,7 +360,8 @@ let rec ill_proof_to_latex ff = function
         | Zero_L ->
             fprintf ff "\\infer0[$0_L$]{ %a }\n@?" ill_latex_sequent sequent
         | OfCourse_L ->
-            let [@warning "-8"] OfCourse f = List.hd gamma in
+            let f = match List.hd gamma with OfCourse f -> f | _ -> assert false
+            in
             if Set_formula.mem f theta then begin 
               ill_proof_to_latex ff (List.hd proof_list);
               fprintf ff "\\infer1[$wk_L$]{ %a }\n@?" ill_latex_sequent sequent
@@ -353,43 +372,43 @@ let rec ill_proof_to_latex ff = function
             ill_proof_to_latex ff (List.hd proof_list);
             fprintf ff "\\infer1[$!_R$]{ %a }\n@?" ill_latex_sequent sequent
         | With_R ->
-            let [@warning "-8"] [br1; br2] = proof_list in
-            ill_proof_to_latex ff br1;
-            ill_proof_to_latex ff br2;
-            fprintf ff "\\infer2[$\with_R$]{ %a }\n@?" 
-            ill_latex_sequent sequent
+            List.iter (ill_proof_to_latex ff) proof_list;
+            fprintf ff "\\infer2[$\\with_R$]{ %a \\vdash %a }\n@?"
+            latex_flist (map_oc' (theta_list @ theta_list) @ gamma)
+            latex_formula formula
         | With_L_1 ->
             ill_proof_to_latex ff (List.hd proof_list);
-            fprintf ff "\\infer1[$\with_{L_1}$]{ %a }\n@?" 
+            fprintf ff "\\infer1[$\\with_{L_1}$]{ %a }\n@?"
             ill_latex_sequent sequent
         | With_L_2 ->
             ill_proof_to_latex ff (List.hd proof_list);
-            fprintf ff "\\infer1[$\with_{L_2}$]{ %a }\n@?" 
+            fprintf ff "\\infer1[$\\with_{L_2}$]{ %a }\n@?"
             ill_latex_sequent sequent
         | Plus_L ->
-            let [@warning "-8"] [br1; br2] = proof_list in
-            ill_proof_to_latex ff br1;
-            ill_proof_to_latex ff br2;
-            fprintf ff "\\infer2[$\oplus_L$]{ %a }\n@?" 
+            List.iter (ill_proof_to_latex ff) proof_list;
+            fprintf ff "\\infer2[$\\oplus_L$]{ %a }\n@?"
             ill_latex_sequent sequent
         | Plus_R_1 ->
             ill_proof_to_latex ff (List.hd proof_list);
-            fprintf ff "\\infer1[$\oplus_{R_1}$]{ %a }\n@?" 
+            fprintf ff "\\infer1[$\\oplus_{R_1}$]{ %a }\n@?"
             ill_latex_sequent sequent 
         | Plus_R_2 ->
             ill_proof_to_latex ff (List.hd proof_list);
-            fprintf ff "\\infer1[$\oplus_{R_2}$]{ %a }\n@?" 
+            fprintf ff "\\infer1[$\\oplus_{R_2}$]{ %a }\n@?"
             ill_latex_sequent sequent
         | Copy f ->
             ill_proof_to_latex ff (List.hd proof_list);
             fprintf ff "\\infer1[$!_L$]{ %a \\vdash %a}\n@?"
-            latex_flist (map_oc theta_list @ (OfCourse f :: gamma)) 
+            latex_flist (map_oc' theta_list @ (OfCourse f :: gamma))
             latex_formula formula;
             fprintf ff "\\infer1[$co_L$]{ %a }\n@?" ill_latex_sequent sequent
         | _ ->
             ill_proof_to_latex ff (List.hd proof_list)         
 
-(* ILLF *)
+(** ILLF **)
+
+(* [illf_latex_sequent ff sequent] outputs the latex code of the ILLF sequent
+   [sequent] on the formatter [ff]. *)
 let illf_latex_sequent ff = function
   | R_focal (theta, gamma, f) -> 
       fprintf ff "%a ; %a \\gg %a"
@@ -409,25 +428,27 @@ let illf_latex_sequent ff = function
       latex_flist omega
       latex_formula f
 
+(* [ill_proof_to_latex_illf ff proof] outputs the latex code of the ILLF proof
+   [proof] on the formatter [ff]. *)
 let rec ill_proof_to_latex_illf ff = function
   | INull -> ()
   | INode (sequent, rule, proof_list) -> match rule with
       | Tensor_L ->
           ill_proof_to_latex_illf ff (List.hd proof_list);
-          fprintf ff "\\infer1[$\otimes L$]{ %a }\n@?" illf_latex_sequent sequent
+          fprintf ff "\\infer1[$\\otimes L$]{ %a }\n@?" illf_latex_sequent
+          sequent
       | Tensor_R _ ->
-          let [@warning "-8"] [br1; br2] = proof_list in
-          ill_proof_to_latex_illf ff br1;
-          ill_proof_to_latex_illf ff br2;
-          fprintf ff "\\infer2[$\otimes R$]{ %a }\n@?" illf_latex_sequent sequent
+          List.iter (ill_proof_to_latex_illf ff) proof_list;
+          fprintf ff "\\infer2[$\\otimes R$]{ %a }\n@?" illf_latex_sequent
+          sequent
       | Impl_L _ ->
-          let [@warning "-8"] [br1; br2] = proof_list in
-          ill_proof_to_latex_illf ff br1;
-          ill_proof_to_latex_illf ff br2;
-          fprintf ff "\\infer2[$\multimap L$]{ %a }\n@?" illf_latex_sequent sequent
+          List.iter (ill_proof_to_latex_illf ff) proof_list;
+          fprintf ff "\\infer2[$\\multimap L$]{ %a }\n@?" illf_latex_sequent
+          sequent
       | Impl_R ->
           ill_proof_to_latex_illf ff (List.hd proof_list);
-          fprintf ff "\\infer1[$\multimap R$]{ %a }\n@?" illf_latex_sequent sequent
+          fprintf ff "\\infer1[$\\multimap R$]{ %a }\n@?" illf_latex_sequent
+          sequent
       | One_L ->
           ill_proof_to_latex_illf ff (List.hd proof_list);
           fprintf ff "\\infer1[$1 L$]{ %a }\n@?" illf_latex_sequent sequent
@@ -438,7 +459,7 @@ let rec ill_proof_to_latex_illf ff = function
       | Init ->
           fprintf ff "\\infer0[$init$]{ %a }\n@?" illf_latex_sequent sequent
       | Top_R ->
-          fprintf ff "\\infer0[$\top R$]{ %a }\n@?" illf_latex_sequent sequent
+          fprintf ff "\\infer0[$\\top R$]{ %a }\n@?" illf_latex_sequent sequent
       | OfCourse_L ->
           ill_proof_to_latex_illf ff (List.hd proof_list);
           fprintf ff "\\infer1[$! R$]{ %a }\n@?" illf_latex_sequent sequent 
@@ -446,31 +467,27 @@ let rec ill_proof_to_latex_illf ff = function
           ill_proof_to_latex_illf ff (List.hd proof_list);
           fprintf ff "\\infer1[$! L$]{ %a }\n@?" illf_latex_sequent sequent
       | With_R ->
-          let [@warning "-8"] [br1; br2] = proof_list in
-          ill_proof_to_latex_illf ff br1;
-          ill_proof_to_latex_illf ff br2;
-          fprintf ff "\\infer2[$\with R$]{ %a }\n@?" illf_latex_sequent sequent
+          List.iter (ill_proof_to_latex_illf ff) proof_list;
+          fprintf ff "\\infer2[$\\with R$]{ %a }\n@?" illf_latex_sequent sequent
       | With_L_1 ->
           ill_proof_to_latex_illf ff (List.hd proof_list);
-          fprintf ff "\\infer1[$\with L_1$]{ %a }\n@?" 
+          fprintf ff "\\infer1[$\\with L_1$]{ %a }\n@?"
           illf_latex_sequent sequent
       | With_L_2 ->
           ill_proof_to_latex_illf ff (List.hd proof_list);
-          fprintf ff "\\infer1[$\with L_2$]{ %a }\n@?"
+          fprintf ff "\\infer1[$\\with L_2$]{ %a }\n@?"
           illf_latex_sequent sequent
       | Plus_L ->
-          let [@warning "-8"] [br1; br2] = proof_list in
-          ill_proof_to_latex_illf ff br1;
-          ill_proof_to_latex_illf ff br2;
-          fprintf ff "\\infer2[$\oplus L$]{ %a }\n@?" 
+          List.iter (ill_proof_to_latex_illf ff) proof_list;
+          fprintf ff "\\infer2[$\\oplus L$]{ %a }\n@?"
           illf_latex_sequent sequent
       | Plus_R_1 ->
           ill_proof_to_latex_illf ff (List.hd proof_list);
-          fprintf ff "\\infer1[$\oplus R_1$]{ %a }\n@?"
+          fprintf ff "\\infer1[$\\oplus R_1$]{ %a }\n@?"
           illf_latex_sequent sequent
       | Plus_R_2 ->
           ill_proof_to_latex_illf ff (List.hd proof_list);
-          fprintf ff "\\infer1[$\oplus R_2$]{ %a }\n@?"
+          fprintf ff "\\infer1[$\\oplus R_2$]{ %a }\n@?"
           illf_latex_sequent sequent
       | Lf ->
           ill_proof_to_latex_illf ff (List.hd proof_list);
@@ -493,7 +510,7 @@ let rec ill_proof_to_latex_illf ff = function
       | Act ->
           ill_proof_to_latex_illf ff (List.hd proof_list);
           fprintf ff "\\infer1[$act$]{ %a }\n@?" illf_latex_sequent sequent
-  
+
 let output_proof_ll proof filename =
   let oc = open_out filename in
   let ff = formatter_of_out_channel oc in

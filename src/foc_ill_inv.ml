@@ -1,10 +1,16 @@
+(*** Forward proof search in ILL using the focused inverse method ***)
+
 open Formula
 open Fctns
 open Fctns_inv
 open Format
 open Printer
 
-let max_nb_copies = ref 3
+(* [max_nb_copies] is maximum number of occurrences of a sequent in the list
+   of sequents used for generating new provable sequents. *)
+let max_nb_copies = ref 1
+
+(** Manipulation of frontier propositions **)
 
 type frontier = 
   Set_formula.t (* + *) * Set_formula.t (* - *) * Set_formula.t (* -!*)
@@ -83,6 +89,8 @@ and active_pos formula = match [@warning "-8"] formula with
   | One -> empty_frontier
   | Top -> empty_frontier  
   | Zero -> empty_frontier
+
+(** Forward Sequents **)
 
 type forward_sequent = Forw of Set_formula.t * context * formula option
 

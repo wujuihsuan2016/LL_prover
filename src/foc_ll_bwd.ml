@@ -1,3 +1,5 @@
+(*** Backward proof search in LL (LLF) ***)
+
 open Lexer
 open Parser
 open Lexing
@@ -6,18 +8,21 @@ open Printer
 open Format
 open Fctns
 
-let test = ref true
-
-let sz = if !test then whynot_height else size
-
+(* [bl] indicates if the (pseudo-)bound on the number of applications of the D2
+   rule is reached. *)
 let bl = ref false 
 
+(* [sort_whynot l] sorts the list of formulas [l] in ascending order using
+   [whynot_height f] as the key of [f]. *)
 let sort_whynot l =
   List.sort (fun x y -> whynot_height y - whynot_height x) l 
 
+(* [prove sequent select_d2 max_d2] attempts to prove the sequent [sequent]
+   where [select_d2] contains the candidates for the D2 rule and [max_d2]
+   is a (pseudo-)bound on the number of applications of the D2 rule. *)
 let rec prove sequent select_d2 max_d2 = match sequent with
   | Async (theta, gamma, l) -> begin match l with
-      | [] -> 
+      | [] ->
           let rec apply_d1 k =
             if k = List.length gamma then None
             else
@@ -66,7 +71,7 @@ let rec prove sequent select_d2 max_d2 = match sequent with
               with NoValue -> None end 
           | Top -> Some (Node (sequent, Top_intro, [Null]))
           | With (f, g) ->  
-              if sz f > sz g then
+              if whynot_height f > whynot_height g then
                 try 
                   let pg = get_op (prove (Async (theta, gamma, g :: tl)) select_d2 max_d2) in
                   let pf = get_op (prove (Async (theta, gamma, f :: tl)) select_d2 max_d2) in
@@ -111,7 +116,7 @@ let rec prove sequent select_d2 max_d2 = match sequent with
           else 
             None
       | Plus (g, h) -> 
-          if sz g > sz h then 
+          if whynot_height g > whynot_height h then
             try 
               let p = get_op (prove (Sync (theta, gamma, h)) select_d2 max_d2) in
               Some (Node (sequent, Plus_intro_2, [p]))
@@ -135,7 +140,7 @@ let rec prove sequent select_d2 max_d2 = match sequent with
             else
               let gamma1, gamma2 = split_list gamma k in
               try
-                if sz g > sz h then   
+                if whynot_height g > whynot_height h then
                   let ph = 
                     get_op (prove (Sync (theta, gamma2, h)) select_d2 max_d2) in
                   let pg = 
@@ -168,7 +173,13 @@ let rec prove sequent select_d2 max_d2 = match sequent with
             else
               None
       | _ -> None  
-      
+
+(* [prove_sequent sequent cst_max_d2] attempts to prove [sequent] and returns
+   the result [(res, proof, time)].
+   [res] = None if the bound [cst_max_d2] is reached, and [res] = (Some b)
+   when the proof search has been finished and b indicates the provability of
+   [sequent]. When the sequent is provable, [proof] contains the proof found.
+   *)
 let prove_sequent sequent cst_max_d2 = 
   bl := false;
   let t = Sys.time () in
