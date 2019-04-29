@@ -14,6 +14,7 @@ let to_terminal = ref false
 let from_terminal = ref "" 
 let only_latex = ref false
 let lltp_format = ref false
+let ptree_export = ref false
 
 let options = 
   ["-ill", Arg.Set in_ill, " Choose ILL as the logical system"; 
@@ -23,6 +24,8 @@ let options =
    " Output the latex code the corresponding proof tree";
    "-lf", Arg.Set foc_latex_export, 
    " Output the latex code of the corresponding focused proof tree";
+   "-ptree", Arg.Set ptree_export,
+   " Output the proof tree in the internal syntax";
    "-bound", Arg.Set_int bound, "<number>  A (pseudo-)bound for the contraction rule";
    "-o", Arg.Set_string ofile, "<foldername>  Set the name of output folder";
    "-t", Arg.Set to_terminal, " Print the result in the terminal";
@@ -88,7 +91,9 @@ let main () =
                     Export_latex.output_proof_llf proof 
                     (folder ^ "/proof_focused.tex"));
                   (if !coq_export then 
-                    Export_coq.output_proof_ll l proof (folder ^ "/proof.v"))
+                    Export_coq.output_proof_ll l proof (folder ^ "/proof.v"));
+                  (if !ptree_export then
+                    Printer.output_proof_ll proof (folder ^ "/proof.apll"))
                   with _ -> ()
                 end
           end
@@ -149,7 +154,10 @@ let main () =
                           (folder ^ "/proof_focused.tex"));
                         (if !coq_export then
                           Export_coq.output_proof_ill bwd_sequent proof 
-                          (folder ^ "/proof.v"))
+                          (folder ^ "/proof.v"));
+                        (if !ptree_export then
+                          Printer.output_proof_ill proof
+                          (folder ^ "/proof.apll"))
                       end
   with
     | Lexer.Lexing_error msg ->

@@ -1,4 +1,4 @@
-# LL prover 
+# APLL
 A Linear Logic Prover implemented in OCaml
 
 ## Usage 
@@ -37,6 +37,7 @@ $ File "filename": Provable. Execution time: 0.004000ms
 - `-c` : Generate a proof certificate that can be verified by Coq using the [yalla](https://github.com/olaure01/yalla/tree/working) library.
 - `-l` : Generate the Latex code of the proof in the fragment chosen (LL or ILL). Proofs are written in the style of sequent calculus with the package [ebproof](https://ctan.org/pkg/ebproof). Another package [cmll](https://ctan.org/pkg/cmll) is used for writing linear logic symbols.
 - `-lf` : Generate the Latex code of the proof in the corresponding focused proof system (LLF or ILLF).
+- `-ptree` : Output the proof tree in the internal syntax (stored in proof.apll). The BNF grammar of the output syntax is [here](./src/syntax.bnf).
 - `-t` : Print the results on the standard output.
 - `-lltp` : Set input format to [LLTP format](https://github.com/meta-logic/lltp).
 - `-s [sequent]` : Write directly the sequent to prove.

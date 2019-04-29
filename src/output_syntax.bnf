@@ -1,0 +1,83 @@
+<ident> ::= 
+  | [a-zA-z][a-zA-Z0-9_]*
+
+<unop> ::=
+  | "!"
+  | "?"
+
+<binop> ::=
+  | "*"
+  | "+"
+  | "&"
+  | "|"
+  | "-o"
+
+<formula> ::=
+  | "1"
+  | "0"
+  | "top"
+  | "bot"
+  | <ident>
+  | <ident> "^"
+  | <unop> <formula>
+  | <formula> <binop> <formula>
+
+<formula_list> ::=
+  | <formula>
+  | <formula_list> "," <formula>
+
+<ill_sequent> ::=
+  | "{" <formula_list> "|-" <formula> "}"
+
+<ill_rule> ::=
+  | "Ax"
+  | "Tensor_L"
+  | "Tensor_R"
+  | "One_L"
+  | "One_R"
+  | "Impl_L"
+  | "Impl_R"
+  | "Plus_L"
+  | "Plus_R_1"
+  | "Plus_R_2"
+  | "Zero_L"
+  | "With_L_1"
+  | "With_L_2"
+  | "With_R"
+  | "Top_R"
+  | "wk_L"
+  | "cont_L"
+  | "der_L"
+  | "OfCourse_R"
+
+<ill_proof> ::=
+  | "(" <ill_sequent> "->" <ill_rule> "->" "[" <ill_proof_list> "]" ")"
+
+<ill_proof_list> ::=
+  | <ill_proof>
+  | <ill_proof_list> "," <ill_proof>
+
+<ll_sequent>
+  | "{" <formula_list> "}"
+
+<ll_rule> ::=
+  | "Ax"
+  | "Tensor"
+  | "Par"
+  | "One"
+  | "Bottom"
+  | "Plus_1"
+  | "Plus_2"
+  | "With"
+  | "Top"
+  | "der"
+  | "wk"
+  | "cont"
+  | "OfCourse"
+
+<ll_proof> ::=
+  | "(" <ll_sequent> "->" <ll_rule> "->" "[" <ll_proof_list> "]" ")"
+
+<ll_proof_list> ::=
+  | <ll_proof>
+  | <ll_proof_list> "," <ll_proof>
